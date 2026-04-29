@@ -1,55 +1,77 @@
 # vLLM ROCm RDNA4 FP8 on RX 9070 XT (gfx1201)
 
-Reproducible notes and Docker assets for running vLLM on AMD RDNA4 / gfx1201 with ROCm nightly packages and FP8 models.
+This repository provides a reproducible, version-pinned Docker setup for running vLLM on AMD RDNA4 (gfx1201), validated on RX 9070 XT with FP8 models.
 
-This repository documents a tested bleeding-edge setup for:
+It is not a magic RDNA4 patch. It does not modify FP8 kernels, add missing model architecture support, or make unsupported ROCm/vLLM combinations work. The value of this repository is the tested alignment of ROCm, PyTorch, vLLM, Docker runtime flags, and a validated FP8 model that works in practice on gfx1201.
 
-- GPU: AMD Radeon RX 9070 XT
-- GPU arch: `gfx1201`
+## Tested Stack
+
+Tested hardware:
+
+- AMD Radeon RX 9070 XT
+- Arch: `gfx1201`
+
+Tested software:
+
 - ROCm: `7.12.0a20260204`
-- PyTorch: `2.9.1+rocm7.12.0a20260204`
+- Torch: `2.9.1+rocm7.12.0a20260204`
 - vLLM: `v0.16.0rc0`
-- Validated model: `Qwen/Qwen3-8B-FP8`
 
-The target audience is people who are comfortable with Docker, ROCm nightlies, and unstable GPU software stacks.
+Tested models:
 
-## What Works
-
-- vLLM imports and serves models through the OpenAI-compatible API.
-- `Qwen/Qwen3-8B-FP8` loads with vLLM FP8 quantization on RX 9070 XT.
-- vLLM uses the ROCm Triton attention backend.
-- RDNA4 container detection issues are patched around with HIP-based device discovery.
-
-Observed benchmark on RX 9070 XT:
-
-| Model | Workload | Result |
-| --- | --- | --- |
-| `Qwen/Qwen3-8B-FP8` | 1 request, 512 output tokens | ~26 tok/s |
-| `Qwen/Qwen3-8B-FP8` | 4 concurrent requests, 512 output tokens each | ~92 tok/s aggregate |
-| `Qwen/Qwen3-8B-FP8` | 8 concurrent requests, 512 output tokens each | ~186-188 tok/s aggregate |
-| small Qwen 0.5B class model | 8 concurrent requests | ~1000+ tok/s aggregate |
+- `Qwen/Qwen3-8B-FP8`
 
 ## Quick Start
 
-Build:
+1. Build:
 
 ```bash
 ./scripts/build.sh
 ```
 
-Run the validated FP8 model:
+2. Run:
 
 ```bash
 ./scripts/run.sh Qwen/Qwen3-8B-FP8
 ```
 
-Smoke test:
+3. Test:
 
 ```bash
 ./scripts/test_chat.sh Qwen/Qwen3-8B-FP8
 ```
 
-Benchmark:
+## Why This Repo Exists
+
+vLLM has AMD support, but RDNA4 is new enough that "supported" does not mean every nightly combination works. ROCm, PyTorch, Triton, vLLM, model architecture support, and Docker device detection can break independently. FP8 adds another layer because a model can load while still taking a slow or poorly tuned path. This repository pins a stack that was verified together on RX 9070 XT. It exists so others can reproduce that working baseline before experimenting.
+
+## How To Verify FP8 Is Actually Working
+
+Signals that the FP8 path is working:
+
+- `Qwen/Qwen3-8B-FP8` uses about 9-10 GB of VRAM, not FP16-class memory.
+- Single-request throughput is above 20 tok/s for the 8B model.
+- GPU power rises during generation.
+- Logs show the ROCm Triton attention backend.
+
+Signals that you may be on a fallback or broken path:
+
+- Generation is very slow.
+- VRAM usage looks close to FP16.
+- GPU stays cold or mostly idle.
+- Throughput is around 1-5 tok/s for the 8B model.
+
+## Benchmarks
+
+Validated on RX 9070 XT:
+
+| Model | Workload | Result |
+| --- | --- | --- |
+| `Qwen/Qwen3-8B-FP8` | 1 request, 512 output tokens | ~26 tok/s |
+| `Qwen/Qwen3-8B-FP8` | 8 concurrent requests, 512 output tokens each | ~186-188 tok/s aggregate |
+| `Qwen2.5-0.5B` class model | 8 concurrent requests | ~1000+ tok/s aggregate |
+
+Run the benchmark script:
 
 ```bash
 ./scripts/benchmark.js Qwen/Qwen3-8B-FP8
@@ -87,7 +109,7 @@ VIDEO_GID=$(getent group video | cut -d: -f3) \
 
 ## Why These Pins
 
-RDNA4 / gfx1201 support is still moving quickly. This setup intentionally pins the ROCm, PyTorch, and vLLM stack that was verified together:
+RDNA4 / gfx1201 support is still moving quickly. This setup intentionally pins the ROCm, PyTorch, and vLLM stack that was verified together. Do not change these versions unless you are intentionally testing a new stack:
 
 - `ROCM_VERSION=7.12.0a20260204`
 - `TORCH_VERSION=2.9.1+rocm7.12.0a20260204`
@@ -114,7 +136,8 @@ See [docs/limitations.md](docs/limitations.md).
 
 Important limitations:
 
-- vLLM RDNA4 detection still needs local patches.
+- This repository aligns a working stack; it does not add unsupported FP8 kernels.
+- It does not add missing vLLM model architecture support.
 - `amdsmi` may fail inside containers even when HIP works.
 - Some newer architectures, such as `Qwen3_5ForConditionalGeneration`, may not be registered in this pinned vLLM.
 - GGUF/Q2 models are not handled by this vLLM image. Use llama.cpp/Ollama for GGUF.

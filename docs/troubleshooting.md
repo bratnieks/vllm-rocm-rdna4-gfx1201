@@ -1,74 +1,21 @@
 # Troubleshooting
 
-## No ROCm-Capable Device
+## `rocminfo` Does Not Show `gfx1201`
 
-Check host devices:
+Fix the host ROCm/AMDGPU stack first. The container cannot expose a GPU that the host driver does not enumerate correctly.
 
-```bash
-ls -l /dev/kfd /dev/dri
-```
+## `torch.cuda.is_available()` Is False
 
-Run the container with:
+Check that the container has both `/dev/kfd` and `/dev/dri`, plus the correct `render` and `video` group IDs.
 
-```bash
---device=/dev/kfd --device=/dev/dri --group-add render --group-add video
-```
+## vLLM Does Not Import
 
-If group names do not work with Docker on your system, use numeric group IDs:
+Do not mix package versions. Rebuild with the pinned Dockerfile and avoid upgrading ROCm, Torch, NumPy, or vLLM inside the container.
 
-```bash
-getent group render
-getent group video
-```
+## The Model Runs Slowly
 
-## `torch.cuda.device_count()` Reports 0
+Check for FP8 fallback symptoms: high VRAM usage, low GPU power, and throughput around 1-5 tok/s. The validated `Qwen/Qwen3-8B-FP8` path should be much faster on RX 9070 XT.
 
-This is one of the RDNA4 container issues this repository patches.
+## Container Missing `/dev/kfd` Or `/dev/dri`
 
-Check that:
-
-- `PYTORCH_ROCM_ARCH=gfx1201` is set.
-- The patch script ran during the image build.
-- `/dev/kfd` and `/dev/dri` are passed through.
-
-## `amdsmi` Fails
-
-This can happen inside containers on the validated stack. It does not necessarily mean HIP execution is broken.
-
-The patch avoids using `amdsmi` as the only source of truth.
-
-## `Qwen3.5` Models Do Not Load
-
-The pinned vLLM revision may not register newer model architectures. During validation, a Qwen3.5 9B FP8 model failed with unsupported `Qwen3_5ForConditionalGeneration`.
-
-Options:
-
-- Use a supported architecture such as `Qwen/Qwen3-8B-FP8`.
-- Rebuild with newer vLLM and accept that the ROCm/RDNA4 patch may need updates.
-
-## FP8 Warning About Missing Kernel Config
-
-Example:
-
-```text
-Using default W8A8 Block FP8 kernel config. Performance might be sub-optimal!
-```
-
-This means vLLM is using a default FP8 kernel configuration for RX 9070 XT. The model can still run, but performance may not be optimal.
-
-## Docker Build Runs Out Of Disk
-
-Use an external BuildKit state directory or a Docker data-root with enough space. Do not export/import large image tarballs unless necessary.
-
-Example pattern:
-
-```bash
-docker buildx create --name rdna4_builder --use
-BUILDER=rdna4_builder ./scripts/build.sh
-```
-
-## Hugging Face Cache On exFAT
-
-Hugging Face cache uses symlinks by default. exFAT does not support them properly.
-
-The cache still works but may use more space and print warnings. Prefer ext4/xfs for model caches when possible.
+Run with `--device=/dev/kfd --device=/dev/dri` or use `scripts/run.sh`, which includes the required device mappings.
