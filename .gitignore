@@ -1,0 +1,8 @@
+.cache/
+*.tar
+*.tar.gz
+*.safetensors
+*.gguf
+__pycache__/
+node_modules/
+.env

@@ -1,0 +1,29 @@
+services:
+  vllm:
+    image: ${IMAGE_NAME:-vllm-rocm-gfx1201:patchset}
+    container_name: ${CONTAINER_NAME:-vllm-gfx1201}
+    devices:
+      - /dev/kfd
+      - /dev/dri
+    group_add:
+      - "${RENDER_GID:-992}"
+      - "${VIDEO_GID:-44}"
+    ipc: host
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp=unconfined
+    ports:
+      - "${PORT:-8000}:8000"
+    volumes:
+      - ${HF_CACHE:-./.cache/huggingface}:/root/.cache/huggingface
+    command:
+      - ${MODEL:-Qwen/Qwen3-8B-FP8}
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --max-model-len
+      - "${MAX_MODEL_LEN:-8192}"
+      - --gpu-memory-utilization
+      - "${GPU_MEMORY_UTILIZATION:-0.90}"
