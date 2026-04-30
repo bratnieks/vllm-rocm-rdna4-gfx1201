@@ -16,6 +16,7 @@ Tested software:
 - ROCm: `7.12.0a20260204`
 - Torch: `2.9.1+rocm7.12.0a20260204`
 - vLLM: `v0.16.0rc0`
+- Transformers: `5.7.0`
 
 Tested models:
 
@@ -116,6 +117,7 @@ RDNA4 / gfx1201 support is still moving quickly. This setup intentionally pins t
 - `TORCHVISION_VERSION=0.24.0+rocm7.12.0a20260204`
 - `TORCHAUDIO_VERSION=2.9.0+rocm7.12.0a20260204`
 - `vLLM tag v0.16.0rc0`
+- `TRANSFORMERS_VERSION=5.7.0`
 
 Later nightlies may work better or worse. Treat upgrades as experiments, not routine maintenance.
 
@@ -139,7 +141,7 @@ Important limitations:
 - This repository aligns a working stack; it does not add unsupported FP8 kernels.
 - It does not add missing vLLM model architecture support.
 - `amdsmi` may fail inside containers even when HIP works.
-- Some newer architectures, such as `Qwen3_5ForConditionalGeneration`, may not be registered in this pinned vLLM.
+- New model architectures still require matching vLLM support. The image pins `transformers==5.7.0` so configs such as `qwen3_5_moe` are recognized by Transformers, but models whose architecture is `Qwen3_5MoeForConditionalGeneration` still require native vLLM support and may fail with "Model architectures ... are not supported for now."
 - GGUF/Q2 models are not handled by this vLLM image. Use llama.cpp/Ollama for GGUF.
 - This is not a supported production stack.
 

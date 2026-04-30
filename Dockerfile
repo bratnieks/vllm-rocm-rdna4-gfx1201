@@ -7,6 +7,7 @@ ARG TORCHVISION_VERSION=0.24.0+rocm7.12.0a20260204
 ARG TORCHAUDIO_VERSION=2.9.0+rocm7.12.0a20260204
 ARG VLLM_REF=v0.16.0rc0
 ARG FLASH_ATTN_REF=enable-ck-gfx12
+ARG TRANSFORMERS_VERSION=5.7.0
 
 FROM ubuntu:24.04 AS base
 
@@ -19,6 +20,7 @@ ARG TORCHVISION_VERSION
 ARG TORCHAUDIO_VERSION
 ARG VLLM_REF
 ARG FLASH_ATTN_REF
+ARG TRANSFORMERS_VERSION
 
 SHELL ["/bin/bash", "-l", "-c"]
 WORKDIR /app
@@ -94,6 +96,7 @@ RUN --security=insecure git clone https://github.com/vllm-project/vllm.git /app/
     uv pip install "numpy<2" && \
     uv pip install -r requirements/rocm.txt && \
     python setup.py develop && \
+    uv pip install --upgrade "transformers==${TRANSFORMERS_VERSION}" && \
     uv pip install /opt/rocm/share/amd_smi
 
 COPY patches/vllm_rdna4_patches.py /tmp/vllm_rdna4_patches.py

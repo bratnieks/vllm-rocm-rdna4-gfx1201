@@ -2,7 +2,7 @@
 set -euo pipefail
 
 MODEL="${1:-Qwen/Qwen3-8B-FP8}"
-IMAGE_NAME="${IMAGE_NAME:-vllm-rocm-gfx1201:patchset}"
+IMAGE_NAME="${IMAGE_NAME:-vllm-rocm-gfx1201:transformers-upgrade}"
 CONTAINER_NAME="${CONTAINER_NAME:-vllm-gfx1201}"
 PORT="${PORT:-8000}"
 HF_CACHE="${HF_CACHE:-$PWD/.cache/huggingface}"
