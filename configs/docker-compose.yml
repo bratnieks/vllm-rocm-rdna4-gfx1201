@@ -1,6 +1,6 @@
 services:
   vllm:
-    image: ${IMAGE_NAME:-vllm-rocm-gfx1201:patchset}
+    image: ${IMAGE_NAME:-vllm-rocm-gfx1201:transformers-upgrade}
     container_name: ${CONTAINER_NAME:-vllm-gfx1201}
     devices:
       - /dev/kfd
