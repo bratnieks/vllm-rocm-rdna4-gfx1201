@@ -141,7 +141,7 @@ Important limitations:
 - This repository aligns a working stack; it does not add unsupported FP8 kernels.
 - It does not add missing vLLM model architecture support.
 - `amdsmi` may fail inside containers even when HIP works.
-- New model architectures still require matching vLLM support, but the image pins `transformers==5.7.0` so configs such as `qwen3_5_moe` are recognized by Transformers.
+- New model architectures still require matching vLLM support. The image pins `transformers==5.7.0` so configs such as `qwen3_5_moe` are recognized by Transformers, but models whose architecture is `Qwen3_5MoeForConditionalGeneration` still require native vLLM support and may fail with "Model architectures ... are not supported for now."
 - GGUF/Q2 models are not handled by this vLLM image. Use llama.cpp/Ollama for GGUF.
 - This is not a supported production stack.
 
